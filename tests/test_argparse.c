@@ -12,7 +12,7 @@ static void on_flag(struct ARGS* args) {
 
 int main(void) {
     struct OPTIONS* opts = argparse_new_options();
-    argparse_add_option(opts, "--flag", on_flag);
+    assert(argparse_add_option(opts, "--flag", on_flag) == ARGPARSE_OK);
 
     HANDLER_TYPE handler = argparse_get_handler(opts, "--flag");
     assert(handler == on_flag);
@@ -20,6 +20,14 @@ int main(void) {
 
     handler(NULL);
     assert(calls == 1);
+
+    assert(argparse_add_option(NULL, "--x", on_flag) == ARGPARSE_ERR_NULL);
+    assert(argparse_add_option(opts, NULL, on_flag) == ARGPARSE_ERR_NULL);
+    assert(argparse_get_handler(NULL, "--x") == NULL);
+    assert(argparse_get_handler(opts, NULL) == NULL);
+
+    argparse_free_options(NULL);
+    argparse_free_args(NULL);
 
     argparse_free_options(opts);
     puts("ok");

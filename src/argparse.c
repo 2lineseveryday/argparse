@@ -1,6 +1,5 @@
 #include "argparse.h"
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,26 +20,33 @@ struct OPTIONS {
     int capacity;
 };
 
-void argparse_add_option(struct OPTIONS* opts, const char* option_string,
-                         HANDLER_TYPE handler) {
-    assert(opts != NULL);
+argparse_error argparse_add_option(struct OPTIONS* opts,
+                                   const char* option_string,
+                                   HANDLER_TYPE handler) {
+    if (!opts || !option_string || !handler) {
+        return ARGPARSE_ERR_NULL;
+    }
     struct OPTION option = {.option_string = option_string, .handler = handler};
 
     if (opts->count == opts->capacity) {
-        if (opts->capacity == 0) {
-            opts->capacity = 1;
-        } else {
-            opts->capacity++;
+        int new_capacity = opts->capacity ? opts->capacity * 2 : 4;
+        struct OPTION* p =
+            realloc(opts->options, sizeof(struct OPTION) * new_capacity);
+        if (!p) {
+            return ARGPARSE_ERR_REALLOC;
         }
-        opts->options =
-            realloc(opts->options, sizeof(struct OPTION) * opts->capacity);
-        assert(opts->options != NULL);
+        opts->options = p;
+        opts->capacity = new_capacity;
     }
     opts->options[opts->count++] = option;
+    return ARGPARSE_OK;
 }
 
 const char* argparse_get_next_arg(struct ARGS* args) {
-    assert(args != NULL);
+    if (!args) {
+        return NULL;
+    }
+
     if (args->index < args->argc) {
         return args->argv[args->index++];
     }
@@ -49,7 +55,9 @@ const char* argparse_get_next_arg(struct ARGS* args) {
 
 struct ARGS* argparse_new_args(int argc, const char** argv) {
     struct ARGS* args = malloc(sizeof(struct ARGS));
-    assert(args != NULL);
+    if (!args) {
+        return NULL;
+    }
 
     args->argc = argc;
     args->argv = argv;
@@ -58,14 +66,13 @@ struct ARGS* argparse_new_args(int argc, const char** argv) {
     return args;
 }
 
-void argparse_free_args(struct ARGS* args) {
-    assert(args != NULL);
-    free(args);
-}
+void argparse_free_args(struct ARGS* args) { free(args); }
 
 struct OPTIONS* argparse_new_options(void) {
     struct OPTIONS* opts = malloc(sizeof(struct OPTIONS));
-    assert(opts != NULL);
+    if (!opts) {
+        return NULL;
+    }
 
     opts->options = NULL;
     opts->count = 0;
@@ -75,9 +82,7 @@ struct OPTIONS* argparse_new_options(void) {
 }
 
 void argparse_free_options(struct OPTIONS* opts) {
-    assert(opts != NULL);
-
-    if (opts->options) {
+    if (opts) {
         free(opts->options);
     }
 
@@ -85,6 +90,9 @@ void argparse_free_options(struct OPTIONS* opts) {
 }
 
 HANDLER_TYPE argparse_get_handler(struct OPTIONS* opts, const char* arg) {
+    if (!opts || !arg) {
+        return NULL;
+    }
     for (int i = 0; i < opts->count; ++i) {
         if (strncmp(arg, opts->options[i].option_string,
                     strlen(opts->options[i].option_string) + 1) == 0) {

@@ -9,7 +9,10 @@ void print_help(struct ARGS* /*ags*/) { printf("argparse help\n"); }
 int main(int argc, const char** argv) {
     struct ARGS* args = argparse_new_args(argc, argv);
     struct OPTIONS* opts = argparse_new_options();
-    argparse_add_option(opts, "--help", print_help);
+    argparse_error ret = argparse_add_option(opts, "--help", print_help);
+    if (ret != ARGPARSE_OK) {
+        return 1;
+    }
     const char* arg = NULL;
     while ((arg = argparse_get_next_arg(args)) != NULL) {
         printf("%s\n", arg);

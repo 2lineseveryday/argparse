@@ -9,10 +9,17 @@ struct ARGS;
 struct OPTION;
 struct OPTIONS;
 
+typedef enum {
+    ARGPARSE_OK = 0,
+    ARGPARSE_ERR_NULL,
+    ARGPARSE_ERR_REALLOC,
+} argparse_error;
+
 typedef void (*HANDLER_TYPE)(struct ARGS*);
 
-void argparse_add_option(struct OPTIONS* opts, const char* option_string,
-                         HANDLER_TYPE handler);
+argparse_error argparse_add_option(struct OPTIONS* opts,
+                                   const char* option_string,
+                                   HANDLER_TYPE handler);
 const char* argparse_get_next_arg(struct ARGS* args);
 
 struct ARGS* argparse_new_args(int argc, const char** argv);
