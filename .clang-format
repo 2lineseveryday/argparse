@@ -1,0 +1,15 @@
+BasedOnStyle: Google
+
+# 들여쓰기(Indentation) 설정
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never # 탭 대신 공백(Space) 사용
+
+# 포인터(*) 및 참조(&) 기호의 정렬 위치 (Left: int* p, Right: int *p, Middle: int * p)
+PointerAlignment: Left
+
+# 액세스 지정자(public, private 등)의 들여쓰기 크기
+AccessModifierOffset: -4
+
+# include 구문 자동 정렬 여부
+SortIncludes: true

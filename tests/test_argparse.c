@@ -1,0 +1,27 @@
+#include <assert.h>
+#include <stdio.h>
+
+#include "argparse.h"
+
+static int calls = 0;
+
+static void on_flag(struct ARGS* args) {
+    (void)args;
+    calls++;
+}
+
+int main(void) {
+    struct OPTIONS* opts = argparse_new_options();
+    argparse_add_option(opts, "--flag", on_flag);
+
+    HANDLER_TYPE handler = argparse_get_handler(opts, "--flag");
+    assert(handler == on_flag);
+    assert(argparse_get_handler(opts, "--missing") == NULL);
+
+    handler(NULL);
+    assert(calls == 1);
+
+    argparse_free_options(opts);
+    puts("ok");
+    return 0;
+}
