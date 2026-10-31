@@ -3,22 +3,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct argparse_args{
+enum {
+    OPTIONS_INITIAL_CAPACITY = 4,
+};
+
+struct argparse_args {
     int argc;
     int index;
     const char** argv;
 };
 
 struct argparse_option {
-    const char* option_string;
-    void (*handler)(ARGPARSE_ARGS* args);
+    char* option_string;
+    argparse_handler_type handler;
 };
 
 struct argparse_options {
     ARGPARSE_OPTION* options;
-    int count;
-    int capacity;
+    size_t count;
+    size_t capacity;
 };
+
+static char* argparse_strdup(const char* s) {
+    size_t n = strlen(s) + 1;
+    char* p = malloc(n);
+    if (p) {
+        memcpy(p, s, n);
+    }
+    return p;
+}
 
 argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
                                    const char* option_string,
@@ -26,19 +39,24 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
     if (!opts || !option_string || !handler) {
         return ARGPARSE_ERR_NULL;
     }
-    ARGPARSE_OPTION option = {.option_string = option_string,
-                              .handler = handler};
+    char* copy = argparse_strdup(option_string);
+    if (!copy) {
+        return ARGPARSE_ERR_ALLOC;
+    }
 
     if (opts->count == opts->capacity) {
-        int new_capacity = opts->capacity ? opts->capacity * 2 : 4;
+        size_t new_capacity =
+            opts->capacity ? opts->capacity * 2 : OPTIONS_INITIAL_CAPACITY;
         ARGPARSE_OPTION* p =
             realloc(opts->options, sizeof(ARGPARSE_OPTION) * new_capacity);
         if (!p) {
-            return ARGPARSE_ERR_REALLOC;
+            free(copy);
+            return ARGPARSE_ERR_ALLOC;
         }
         opts->options = p;
         opts->capacity = new_capacity;
     }
+    ARGPARSE_OPTION option = {.option_string = copy, .handler = handler};
     opts->options[opts->count++] = option;
     return ARGPARSE_OK;
 }
@@ -84,19 +102,21 @@ ARGPARSE_OPTIONS* argparse_new_options(void) {
 
 void argparse_free_options(ARGPARSE_OPTIONS* opts) {
     if (opts) {
+        for (size_t i = 0; i < opts->count; ++i) {
+            free(opts->options[i].option_string);
+        }
         free(opts->options);
     }
-
     free(opts);
 }
 
-argparse_handler_type argparse_get_handler(ARGPARSE_OPTIONS* opts, const char* arg) {
+argparse_handler_type argparse_get_handler(ARGPARSE_OPTIONS* opts,
+                                           const char* arg) {
     if (!opts || !arg) {
         return NULL;
     }
-    for (int i = 0; i < opts->count; ++i) {
-        if (strncmp(arg, opts->options[i].option_string,
-                    strlen(opts->options[i].option_string) + 1) == 0) {
+    for (size_t i = 0; i < opts->count; ++i) {
+        if (strcmp(arg, opts->options[i].option_string) == 0) {
             return opts->options[i].handler;
         }
     }

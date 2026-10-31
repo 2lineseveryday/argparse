@@ -12,7 +12,7 @@ typedef struct argparse_options ARGPARSE_OPTIONS;
 typedef enum {
     ARGPARSE_OK = 0,
     ARGPARSE_ERR_NULL,
-    ARGPARSE_ERR_REALLOC,
+    ARGPARSE_ERR_ALLOC,
 } argparse_error;
 
 typedef void (*argparse_handler_type)(ARGPARSE_ARGS*);
@@ -28,7 +28,8 @@ void argparse_free_args(ARGPARSE_ARGS* args);
 ARGPARSE_OPTIONS* argparse_new_options(void);
 void argparse_free_options(ARGPARSE_OPTIONS* opts);
 
-argparse_handler_type argparse_get_handler(ARGPARSE_OPTIONS* opts, const char* arg);
+argparse_handler_type argparse_get_handler(ARGPARSE_OPTIONS* opts,
+                                           const char* arg);
 
 #ifdef __cplusplus
 }
