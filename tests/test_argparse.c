@@ -5,16 +5,16 @@
 
 static int calls = 0;
 
-static void on_flag(struct ARGS* args) {
+static void on_flag(ARGPARSE_ARGS* args) {
     (void)args;
     calls++;
 }
 
 int main(void) {
-    struct OPTIONS* opts = argparse_new_options();
+    ARGPARSE_OPTIONS* opts = argparse_new_options();
     assert(argparse_add_option(opts, "--flag", on_flag) == ARGPARSE_OK);
 
-    HANDLER_TYPE handler = argparse_get_handler(opts, "--flag");
+    argparse_handler_type handler = argparse_get_handler(opts, "--flag");
     assert(handler == on_flag);
     assert(argparse_get_handler(opts, "--missing") == NULL);
 
