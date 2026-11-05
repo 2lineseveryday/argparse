@@ -6,30 +6,38 @@ extern "C" {
 #endif
 
 typedef struct argparse_args ARGPARSE_ARGS;
-typedef struct argparse_option ARGPARSE_OPTION;
 typedef struct argparse_options ARGPARSE_OPTIONS;
 
 typedef enum {
     ARGPARSE_OK = 0,
     ARGPARSE_ERR_NULL,
     ARGPARSE_ERR_ALLOC,
+    ARGPARSE_ERR_MISSING_VALUE,
+    ARGPARSE_ERR_UNKNOWN_OPTION,
+    ARGPARSE_ERR_NOT_SET,
 } argparse_error;
 
-typedef void (*argparse_handler_type)(ARGPARSE_ARGS*);
+typedef enum {
+    ARG_NONE,
+    ARG_REQ,
+} argparse_argtype;
 
 argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
                                    const char* option_string,
-                                   argparse_handler_type handler);
-const char* argparse_get_next_arg(ARGPARSE_ARGS* args);
+                                   argparse_argtype type);
+
+argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args);
+argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
+                                         const char* option_string,
+                                         const char** out);
+
+void argparse_print_help(ARGPARSE_OPTIONS* opts);
 
 ARGPARSE_ARGS* argparse_new_args(int argc, const char** argv);
 void argparse_free_args(ARGPARSE_ARGS* args);
 
-ARGPARSE_OPTIONS* argparse_new_options(void);
+ARGPARSE_OPTIONS* argparse_new_options(const char* program);
 void argparse_free_options(ARGPARSE_OPTIONS* opts);
-
-argparse_handler_type argparse_get_handler(ARGPARSE_OPTIONS* opts,
-                                           const char* arg);
 
 #ifdef __cplusplus
 }
