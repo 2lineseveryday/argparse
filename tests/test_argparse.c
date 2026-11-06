@@ -40,16 +40,31 @@
         const char* v_ = NULL;                                            \
         assert(argparse_get_option_value(opts, name, &v_) == (expected)); \
     } while (0)
+#define HAS_OPT(opts, name)                                                \
+    do {                                                                   \
+        int v_ = 0;                                                        \
+        assert(argparse_has_option(opts, name, &v_) == ARGPARSE_OK); \
+        assert(v_);                                                        \
+    } while (0)
+
+#define HAS_OPT_ABSENT(opts, name)                                           \
+    do {                                                                  \
+        int v_ = 0;                                                      \
+        assert(argparse_has_option(opts, name, &v_) == ARGPARSE_OK); \
+        assert(!v_);                                                      \
+    } while (0)
 
 int main(void) {
     ARGPARSE_OPTIONS* opts = argparse_new_options("test_argparse");
     ADD_OPT(opts, "flag", ARG_REQ);
     ADD_OPT(opts, "verbose", ARG_NONE);
+    ADD_OPT(opts, "notused", ARG_NONE);
 
     /* parse */
     PARSE_OK(opts, "--flag=hello", "--verbose");
     VALUE_IS(opts, "flag", "hello");
-    VALUE_IS(opts, "verbose", "1");
+    HAS_OPT(opts, "verbose");
+    HAS_OPT_ABSENT(opts, "notused");
     VALUE_ERR(opts, "missing", ARGPARSE_ERR_UNKNOWN_OPTION);
 
     PARSE_ERR(opts, ARGPARSE_ERR_UNKNOWN_OPTION, "--falg", "world");
@@ -65,6 +80,8 @@ int main(void) {
 
     /* 값 누락 */
     PARSE_ERR(opts, ARGPARSE_ERR_MISSING_VALUE, "--flag");
+    VALUE_ERR(opts, "flag", ARGPARSE_ERR_NOT_SET);
+    HAS_OPT_ABSENT(opts, "flag");
 
     /* 긴 인자 (이전 스택 오버플로 회귀) */
     PARSE_OK(opts, "--flag=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");

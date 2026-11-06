@@ -180,6 +180,19 @@ argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args) {
     return ARGPARSE_OK;
 }
 
+argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* arg,
+                                   int* out) {
+    if (!opts || !arg || !out) {
+        return ARGPARSE_ERR_NULL;
+    }
+    ARGPARSE_OPTION* opt = argparse_get_option(opts, arg);
+    if (!opt) {
+        return ARGPARSE_ERR_UNKNOWN_OPTION;
+    }
+    *out = opt->present;
+    return ARGPARSE_OK;
+}
+
 argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
                                          const char* arg, const char** out) {
     if (!opts || !arg || !out) {
@@ -189,10 +202,13 @@ argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
     if (!opt) {
         return ARGPARSE_ERR_UNKNOWN_OPTION;
     }
+    if (opt->type != ARG_REQ) {
+        return ARGPARSE_ERR_WRONG_TYPE;
+    }
     if (!opt->present) {
         return ARGPARSE_ERR_NOT_SET;
     }
-    *out = opt->option_value ? opt->option_value : "1";
+    *out = opt->option_value;
     return ARGPARSE_OK;
 }
 
@@ -205,8 +221,7 @@ void argparse_print_help(ARGPARSE_OPTIONS* opts) {
     for (size_t i = 0; i < opts->count; ++i) {
         if (opts->options[i].type == ARG_NONE) {
             printf("[--%s]", opts->options[i].option_string);
-        }
-        else if(opts->options[i].type == ARG_REQ) {
+        } else if (opts->options[i].type == ARG_REQ) {
             printf("[--%s=value]", opts->options[i].option_string);
         }
     }
