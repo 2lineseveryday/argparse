@@ -5,41 +5,43 @@
 #include "argparse.h"
 
 int main(int argc, const char** argv) {
-    char* program = malloc(strlen(argv[0]) + 1);
-    memcpy(program, argv[0], strlen(argv[0]));
-    program[strlen(argv[0])] = '\0';
+    int rc = 1;
+    char* program = NULL;
+    ARGPARSE_OPTIONS* opts = NULL;
+    ARGPARSE_ARGS* args = NULL;
 
-    ARGPARSE_OPTIONS* opts = argparse_new_options(basename(program));
-    argparse_error ret = argparse_add_option(opts, "help", ARG_NONE);
-    if (ret != ARGPARSE_OK) {
-        return 1;
+    size_t program_size = strlen(argv[0]) + 1;
+    program = malloc(program_size);
+    if (!program) {
+        goto cleanup;
     }
-    ret = argparse_add_option(opts, "flag", ARG_REQ);
-    if (ret != ARGPARSE_OK) {
-        return 1;
+    memcpy(program, argv[0], program_size);
+
+    opts = argparse_new_options(basename(program));
+    if (!opts) {
+        goto cleanup;
+    }
+    if (argparse_add_option(opts, "help", ARG_NONE) != ARGPARSE_OK ||
+        argparse_add_option(opts, "flag", ARG_REQ) != ARGPARSE_OK ||
+        argparse_add_positional(opts, "input") != ARGPARSE_OK ||
+        argparse_add_positional(opts, "output") != ARGPARSE_OK) {
+        goto cleanup;
     }
 
-    ret = argparse_add_positional(opts, "input");
-    if (ret != ARGPARSE_OK) {
-        return 1;
+    args = argparse_new_args(argc - 1, argv + 1);
+    if (!args) {
+        goto cleanup;
     }
-    ret = argparse_add_positional(opts, "output");
-    if (ret != ARGPARSE_OK) {
-        return 1;
-    }
-
-    ARGPARSE_ARGS* args = argparse_new_args(argc - 1, argv + 1);
-    ret = argparse_parse(opts, args);
-    if (ret != ARGPARSE_OK) {
-        return 1;
+    if (argparse_parse(opts, args) != ARGPARSE_OK) {
+        goto cleanup;
     }
 
     argparse_print_help(opts);
+    rc = 0;
 
-    argparse_free_options(opts);
+cleanup:
     argparse_free_args(args);
-
+    argparse_free_options(opts);
     free(program);
-
-    return 0;
+    return rc;
 }
