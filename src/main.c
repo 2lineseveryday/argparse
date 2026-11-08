@@ -1,12 +1,15 @@
-#include <stdio.h>
+#include <libgen.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "argparse.h"
 
-void print_help(void) { printf("argparse help\n"); }
-
 int main(int argc, const char** argv) {
-    ARGPARSE_OPTIONS* opts = argparse_new_options(argv[0]);
+    char* program = malloc(strlen(argv[0]) + 1);
+    memcpy(program, argv[0], strlen(argv[0]));
+    program[strlen(argv[0])] = '\0';
+
+    ARGPARSE_OPTIONS* opts = argparse_new_options(basename(program));
     argparse_error ret = argparse_add_option(opts, "help", ARG_NONE);
     if (ret != ARGPARSE_OK) {
         return 1;
@@ -16,7 +19,16 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    ARGPARSE_ARGS* args = argparse_new_args(argc, argv);
+    ret = argparse_add_positional(opts, "input");
+    if (ret != ARGPARSE_OK) {
+        return 1;
+    }
+    ret = argparse_add_positional(opts, "output");
+    if (ret != ARGPARSE_OK) {
+        return 1;
+    }
+
+    ARGPARSE_ARGS* args = argparse_new_args(argc - 1, argv + 1);
     ret = argparse_parse(opts, args);
     if (ret != ARGPARSE_OK) {
         return 1;
@@ -24,9 +36,10 @@ int main(int argc, const char** argv) {
 
     argparse_print_help(opts);
 
-
     argparse_free_options(opts);
     argparse_free_args(args);
+
+    free(program);
 
     return 0;
 }

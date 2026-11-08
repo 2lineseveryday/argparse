@@ -16,6 +16,9 @@ typedef enum {
     ARGPARSE_ERR_UNKNOWN_OPTION,
     ARGPARSE_ERR_NOT_SET,
     ARGPARSE_ERR_WRONG_TYPE,
+    ARGPARSE_ERR_UNEXPECTED_POSITIONAL,
+    ARGPARSE_ERR_MISSING_POSITIONAL,
+    ARGPARSE_ERR_UNKNOWN_POSITIONAL,
 } argparse_error;
 
 typedef enum {
@@ -27,11 +30,16 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
                                    const char* option_string,
                                    argparse_argtype type);
 
+argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
+                                       const char* option_string);
+
 argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args);
-argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts,
-                                         const char* arg, int* out);
+argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* arg,
+                                   int* out);
 argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
                                          const char* arg, const char** out);
+argparse_error argparse_get_positional_value(ARGPARSE_OPTIONS* opts,
+                                             const char* arg, const char** out);
 
 void argparse_print_help(ARGPARSE_OPTIONS* opts);
 
