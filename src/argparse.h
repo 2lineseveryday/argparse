@@ -28,6 +28,7 @@ typedef enum {
 
 argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
                                    const char* option_string,
+                                   char short_option,
                                    argparse_argtype type);
 
 argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,

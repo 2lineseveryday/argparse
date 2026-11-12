@@ -19,6 +19,7 @@ typedef struct argparse_option {
     argparse_argtype type;
     int present;
     char* option_string;
+    char short_option;
     char* option_value;
 
 } ARGPARSE_OPTION;
@@ -87,14 +88,10 @@ static argparse_error argparse_grow_array(void** data, size_t* capacity,
 }
 
 argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
-                                   const char* option_string,
+                                   const char* option_string, char short_option,
                                    argparse_argtype type) {
     if (!opts || !option_string) {
         return ARGPARSE_ERR_NULL;
-    }
-    char* copy = argparse_strdup(option_string);
-    if (!copy) {
-        return ARGPARSE_ERR_ALLOC;
     }
 
     if (opts->options_count == opts->options_capacity) {
@@ -102,12 +99,16 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
             argparse_grow_array((void**)&opts->options, &opts->options_capacity,
                                 sizeof(ARGPARSE_OPTION));
         if (err != ARGPARSE_OK) {
-            free(copy);
             return err;
         }
     }
+    char* copy = argparse_strdup(option_string);
+    if (!copy) {
+        return ARGPARSE_ERR_ALLOC;
+    }
     ARGPARSE_OPTION option = {
         .option_string = copy,
+        .short_option = short_option,
         .option_value = NULL,
         .type = type,
         .present = 0,
@@ -157,7 +158,18 @@ static ARGPARSE_POSITIONAL* argparse_get_positional(ARGPARSE_OPTIONS* opts,
 
     return NULL;
 }
-
+static ARGPARSE_OPTION* argparse_get_option_short(ARGPARSE_OPTIONS* opts,
+                                                  const char short_option) {
+    if (!opts) {
+        return NULL;
+    }
+    for (size_t i = 0; i < opts->options_count; ++i) {
+        if (short_option == opts->options[i].short_option) {
+            return &opts->options[i];
+        }
+    }
+    return NULL;
+}
 static ARGPARSE_OPTION* argparse_get_option(ARGPARSE_OPTIONS* opts,
                                             const char* arg) {
     if (!opts || !arg) {
@@ -214,7 +226,7 @@ static argparse_error argparse_assign_option(ARGPARSE_OPTIONS* opts,
     } else if (opt->type == ARG_REQ) {
         if (!value) {
             const char* next = argparse_get_next_arg(args);
-            if (!next || (next[0] == '-' && argparse_get_option(opts, next))) {
+            if (!next) {
                 err = ARGPARSE_ERR_MISSING_VALUE;
             } else {
                 value = (char*)next;
@@ -269,11 +281,45 @@ static argparse_error argparse_handle_arg(ARGPARSE_OPTIONS* opts,
     if (args->end_options || arg[0] != '-' || arg[1] == '\0') {
         return argparse_assign_positional(opts, args, arg);
     }
+
     if (strcmp(arg, "--") == 0) {
         args->end_options = 1;
         return ARGPARSE_OK;
     }
-    return argparse_assign_option(opts, args, arg);
+
+    if (arg[1] == '-') {
+        return argparse_assign_option(opts, args, arg);
+    }
+
+    const char* value = NULL;
+    argparse_error err = ARGPARSE_OK;
+    for (size_t i = 1; arg[i]; ++i) {
+        ARGPARSE_OPTION* opt = argparse_get_option_short(opts, arg[i]);
+        if (!opt) {
+            return ARGPARSE_ERR_UNKNOWN_OPTION;
+        }
+        if (opt->type == ARG_NONE) {
+            opt->present = 1;
+            continue;
+        }
+        value = &arg[i + 1];
+        if (value[0] == '=') {
+            value++;
+        } else if (value[0] == '\0') {
+            value = argparse_get_next_arg(args);
+            if (!value) {
+                return ARGPARSE_ERR_MISSING_VALUE;
+            }
+        }
+        err = argparse_set_option_value(opt, value);
+        if (err != ARGPARSE_OK) {
+            free(opt->option_value);
+            opt->option_value = NULL;
+            opt->present = 0;
+        }
+        break;
+    }
+    return err;
 }
 
 static void argparse_reset_options(ARGPARSE_OPTIONS* opts) {
@@ -371,9 +417,19 @@ void argparse_print_help(ARGPARSE_OPTIONS* opts) {
 
     for (size_t i = 0; i < opts->options_count; ++i) {
         if (opts->options[i].type == ARG_NONE) {
-            printf(" [--%s]", opts->options[i].option_string);
+            if (opts->options[i].short_option != '\0') {
+                printf(" [-%c|--%s]", opts->options[i].short_option,
+                       opts->options[i].option_string);
+            } else {
+                printf(" [--%s]", opts->options[i].option_string);
+            }
         } else if (opts->options[i].type == ARG_REQ) {
-            printf(" [--%s=value]", opts->options[i].option_string);
+            if (opts->options[i].short_option != '\0') {
+                printf(" [-%c|--%s=value]", opts->options[i].short_option,
+                       opts->options[i].option_string);
+            } else {
+                printf(" [--%s=value]", opts->options[i].option_string);
+            }
         }
     }
     for (size_t i = 0; i < opts->positional_count; ++i) {

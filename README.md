@@ -4,6 +4,9 @@ A small C11 command-line argument parser with no dependencies.
 
 ## Features
 
+- Short options: `-v`, `-o value`, `-ovalue`, `-o=value`
+- Combined short flags: `-abc` is `-a -b -c`
+- One option can have both names: `-v` and `--verbose`
 - Long options: `--flag`, `--name=value`, `--name value`
 - Flags (`ARG_NONE`) and options that require a value (`ARG_REQ`)
 - Positional arguments, filled in registration order
@@ -33,8 +36,8 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    if (argparse_add_option(opts, "verbose", ARG_NONE) != ARGPARSE_OK ||
-        argparse_add_option(opts, "output", ARG_REQ) != ARGPARSE_OK ||
+    if (argparse_add_option(opts, "verbose", 'v', ARG_NONE) != ARGPARSE_OK ||
+        argparse_add_option(opts, "output", 'o', ARG_REQ) != ARGPARSE_OK ||
         argparse_add_positional(opts, "input") != ARGPARSE_OK) {
         argparse_free_options(opts);
         return 1;
@@ -79,7 +82,7 @@ int main(int argc, const char** argv) {
 ```
 
 ```sh
-$ ./prog --verbose --output out.txt in.txt
+$ ./prog -v -o out.txt in.txt
 verbose
 input: in.txt
 output: out.txt
@@ -90,11 +93,18 @@ output: out.txt
 | Input | Result |
 |---|---|
 | `prog in.txt` | positional `input` = `in.txt` |
-| `prog --verbose in.txt` | flag set, positional filled |
-| `prog --output=out.txt in.txt` | option value from `=` |
-| `prog --output out.txt in.txt` | option value from the next argument |
+| `prog -v in.txt` | short flag set |
+| `prog --verbose in.txt` | long flag set |
+| `prog -o out.txt in.txt` | short option value from the next argument |
+| `prog -oout.txt in.txt` | short option value attached |
+| `prog -o=out.txt in.txt` | short option value after `=` |
+| `prog -o= in.txt` | empty short option value |
+| `prog -abc in.txt` | `-a -b -c` combined |
+| `prog --output=out.txt in.txt` | long option value from `=` |
+| `prog --output out.txt in.txt` | long option value from the next argument |
 | `prog -- --verbose` | `--verbose` becomes a positional |
 | `prog -` | `-` becomes a positional |
+| `prog -5` | unknown option; use `--` for values starting with `-` |
 
 ## API
 
@@ -104,6 +114,7 @@ void argparse_free_options(ARGPARSE_OPTIONS* opts);
 
 argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
                                    const char* option_string,
+                                   char short_option,
                                    argparse_argtype type);
 argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
                                        const char* name);
@@ -128,12 +139,19 @@ void argparse_print_help(ARGPARSE_OPTIONS* opts);
 
 - `argparse_new_options` copies `program`.
 - `argparse_add_option` and `argparse_add_positional` copy the name.
+- `short_option` is a single `char`; pass `'\0'` for a long-only option.
 - Values returned by the getters are owned by the options object and remain valid until `argparse_free_options`.
 
 ### Behavior
 
 - `argparse_parse` resets option and positional state before parsing, so the same `opts` can be reused for another call.
 - `argparse_get_option_value` returns `ARGPARSE_ERR_WRONG_TYPE` for `ARG_NONE` options; use `argparse_has_option` for flags.
+- A value-taking short option ends a cluster and takes the rest of the token as its value: `-ovalue` and `-o=value` both set `value`.
+- The next argument is always taken as the value, even when it starts with `-` (POSIX behavior). `prog -o -5` sets the value to `-5`.
+- A value-taking option with no following argument returns `ARGPARSE_ERR_MISSING_VALUE`.
+- After `--`, every token is a positional, including a second `--`.
+- Getters take the long name; short names are not used for lookup.
+- `argparse_print_help` shows both names: `[-v|--verbose]`, `[-o|--output=value]`.
 - All positionals are required and have a fixed count. Optional and variadic positionals are not supported yet.
 
 ### Errors

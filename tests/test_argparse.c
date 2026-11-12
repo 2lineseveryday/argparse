@@ -6,8 +6,8 @@
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 
-#define ADD_OPT(opts, name, type) \
-    assert(argparse_add_option(opts, name, type) == ARGPARSE_OK)
+#define ADD_OPT(opts, name, short, type) \
+    assert(argparse_add_option(opts, name, short, type) == ARGPARSE_OK)
 
 #define ADD_POS(opts, name) \
     assert(argparse_add_positional(opts, name) == ARGPARSE_OK)
@@ -73,9 +73,9 @@
 
 int main(void) {
     ARGPARSE_OPTIONS* opts = argparse_new_options("test_argparse");
-    ADD_OPT(opts, "flag", ARG_REQ);
-    ADD_OPT(opts, "verbose", ARG_NONE);
-    ADD_OPT(opts, "notused", ARG_NONE);
+    ADD_OPT(opts, "flag", 'f', ARG_REQ);
+    ADD_OPT(opts, "verbose", 'v', ARG_NONE);
+    ADD_OPT(opts, "notused", 'n', ARG_NONE);
 
     ADD_POS(opts, "input");
     ADD_POS(opts, "output");
@@ -93,6 +93,37 @@ int main(void) {
 
     PARSE_ERR(opts, ARGPARSE_ERR_UNEXPECTED_POSITIONAL, "--flag=hello",
               "--verbose", "testinput", "testoutput", "unexpected");
+
+    PARSE_OK(opts, "--", "--", "output");
+    POS_IS(opts, "input", "--");
+    POS_IS(opts, "output", "output");
+
+    PARSE_OK(opts, "-vf=hello", "testinput", "testoutput");
+    VALUE_IS(opts, "flag", "hello");
+    HAS_OPT(opts, "verbose");
+
+    PARSE_OK(opts, "-f", "hello", "input", "output");
+    VALUE_IS(opts, "flag", "hello");
+
+    PARSE_OK(opts, "-fhello", "input", "output");
+    VALUE_IS(opts, "flag", "hello");
+
+    PARSE_OK(opts, "-f=hello", "input", "output");
+    VALUE_IS(opts, "flag", "hello");
+
+    PARSE_OK(opts, "-f=", "input", "output");
+    VALUE_IS(opts, "flag", "");
+
+    PARSE_OK(opts, "-vf=", "input", "output");
+    VALUE_IS(opts, "flag", "");
+    HAS_OPT(opts, "verbose");
+
+    PARSE_ERR(opts, ARGPARSE_ERR_MISSING_VALUE, "-f");
+    PARSE_ERR(opts, ARGPARSE_ERR_UNKNOWN_OPTION, "-x");
+    PARSE_ERR(opts, ARGPARSE_ERR_UNKNOWN_OPTION, "-vx");
+
+    PARSE_OK(opts, "--", "-v", "output");
+    POS_IS(opts, "input", "-v");
 
     /* -- 종료자 */
     PARSE_OK(opts, "--", "-5", "--flag");
@@ -115,9 +146,9 @@ int main(void) {
 
     /* 공백 형태 */
     ARGPARSE_OPTIONS* opts1 = argparse_new_options("test_argparse");
-    ADD_OPT(opts1, "flag", ARG_REQ);
-    ADD_OPT(opts1, "verbose", ARG_NONE);
-    ADD_OPT(opts1, "notused", ARG_NONE);
+    ADD_OPT(opts1, "flag", 'f', ARG_REQ);
+    ADD_OPT(opts1, "verbose", 'v', ARG_NONE);
+    ADD_OPT(opts1, "notused", 'n', ARG_NONE);
 
     PARSE_OK(opts1, "--flag", "world");
     VALUE_IS(opts1, "flag", "world");

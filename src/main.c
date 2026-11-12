@@ -21,8 +21,8 @@ int main(int argc, const char** argv) {
     if (!opts) {
         goto cleanup;
     }
-    if (argparse_add_option(opts, "help", ARG_NONE) != ARGPARSE_OK ||
-        argparse_add_option(opts, "flag", ARG_REQ) != ARGPARSE_OK ||
+    if (argparse_add_option(opts, "help", 'h', ARG_NONE) != ARGPARSE_OK ||
+        argparse_add_option(opts, "flag", 'f', ARG_REQ) != ARGPARSE_OK ||
         argparse_add_positional(opts, "input") != ARGPARSE_OK ||
         argparse_add_positional(opts, "output") != ARGPARSE_OK) {
         goto cleanup;
