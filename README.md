@@ -12,7 +12,7 @@ A small C11 command-line argument parser with no dependencies.
 - Positional arguments, filled in registration order
 - `--` terminates option parsing; a lone `-` is treated as a positional
 - Unknown options, missing values, and missing/extra positionals return error codes
-- No global state: everything lives in an `ARGPARSE_OPTIONS` handle
+- No global state: everything lives in an `argparse_options` handle
 
 ## Build
 
@@ -31,7 +31,7 @@ make clean
 #include "argparse.h"
 
 int main(int argc, const char** argv) {
-    ARGPARSE_OPTIONS* opts = argparse_new_options(argv[0]);
+    argparse_options* opts = argparse_new_options(argv[0]);
     if (!opts) {
         return 1;
     }
@@ -44,7 +44,7 @@ int main(int argc, const char** argv) {
     }
 
     /* The program name is not part of the arguments. */
-    ARGPARSE_ARGS* args = argparse_new_args(argc - 1, argv + 1);
+    argparse_args* args = argparse_new_args(argc - 1, argv + 1);
     if (!args) {
         argparse_free_options(opts);
         return 1;
@@ -109,30 +109,30 @@ output: out.txt
 ## API
 
 ```c
-ARGPARSE_OPTIONS* argparse_new_options(const char* program);
-void argparse_free_options(ARGPARSE_OPTIONS* opts);
+argparse_options* argparse_new_options(const char* program);
+void argparse_free_options(argparse_options* opts);
 
-argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_add_option(argparse_options* opts,
                                    const char* option_string,
                                    char short_option,
                                    argparse_argtype type);
-argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_add_positional(argparse_options* opts,
                                        const char* name);
 
-ARGPARSE_ARGS* argparse_new_args(int argc, const char** argv);
-void argparse_free_args(ARGPARSE_ARGS* args);
+argparse_args* argparse_new_args(int argc, const char** argv);
+void argparse_free_args(argparse_args* args);
 
-argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args);
+argparse_error argparse_parse(argparse_options* opts, argparse_args* args);
 
-argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* name,
+argparse_error argparse_has_option(argparse_options* opts, const char* name,
                                    int* out);
-argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_option_value(argparse_options* opts,
                                          const char* name, const char** out);
-argparse_error argparse_get_positional_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_positional_value(argparse_options* opts,
                                              const char* name,
                                              const char** out);
 
-void argparse_print_help(ARGPARSE_OPTIONS* opts);
+void argparse_print_help(argparse_options* opts);
 ```
 
 ### Ownership

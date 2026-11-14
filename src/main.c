@@ -7,8 +7,8 @@
 int main(int argc, const char** argv) {
     int rc = 1;
     char* program = NULL;
-    ARGPARSE_OPTIONS* opts = NULL;
-    ARGPARSE_ARGS* args = NULL;
+    argparse_options* opts = NULL;
+    argparse_args* args = NULL;
 
     size_t program_size = strlen(argv[0]) + 1;
     program = malloc(program_size);

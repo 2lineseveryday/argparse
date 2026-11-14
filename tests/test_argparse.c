@@ -16,7 +16,7 @@
 #define PARSE_OK(opts, ...)                                      \
     do {                                                         \
         const char* av_[] = {"prog", __VA_ARGS__};               \
-        ARGPARSE_ARGS* args_ =                                   \
+        argparse_args* args_ =                                   \
             argparse_new_args((int)ARRAY_LEN(av_) - 1, av_ + 1); \
         argparse_error err_ = argparse_parse(opts, args_);       \
         argparse_free_args(args_);                               \
@@ -26,7 +26,7 @@
 #define PARSE_ERR(opts, expected, ...)                           \
     do {                                                         \
         const char* av_[] = {"prog", __VA_ARGS__};               \
-        ARGPARSE_ARGS* args_ =                                   \
+        argparse_args* args_ =                                   \
             argparse_new_args((int)ARRAY_LEN(av_) - 1, av_ + 1); \
         argparse_error err_ = argparse_parse(opts, args_);       \
         argparse_free_args(args_);                               \
@@ -72,7 +72,7 @@
     } while (0)
 
 int main(void) {
-    ARGPARSE_OPTIONS* opts = argparse_new_options("test_argparse");
+    argparse_options* opts = argparse_new_options("test_argparse");
     ADD_OPT(opts, "flag", 'f', ARG_REQ);
     ADD_OPT(opts, "verbose", 'v', ARG_NONE);
     ADD_OPT(opts, "notused", 'n', ARG_NONE);
@@ -145,7 +145,7 @@ int main(void) {
     PARSE_ERR(opts, ARGPARSE_ERR_UNKNOWN_OPTION, "--falg=world");
 
     /* 공백 형태 */
-    ARGPARSE_OPTIONS* opts1 = argparse_new_options("test_argparse");
+    argparse_options* opts1 = argparse_new_options("test_argparse");
     ADD_OPT(opts1, "flag", 'f', ARG_REQ);
     ADD_OPT(opts1, "verbose", 'v', ARG_NONE);
     ADD_OPT(opts1, "notused", 'n', ARG_NONE);

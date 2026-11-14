@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-typedef struct argparse_args ARGPARSE_ARGS;
-typedef struct argparse_options ARGPARSE_OPTIONS;
+typedef struct _argparse_args argparse_args;
+typedef struct _argparse_options argparse_options;
 
 typedef enum {
     ARGPARSE_OK = 0,
@@ -26,29 +26,28 @@ typedef enum {
     ARG_REQ,
 } argparse_argtype;
 
-argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
-                                   const char* option_string,
-                                   char short_option,
+argparse_error argparse_add_option(argparse_options* opts,
+                                   const char* option_string, char short_option,
                                    argparse_argtype type);
 
-argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
-                                       const char* option_string);
+argparse_error argparse_add_positional(argparse_options* opts,
+                                       const char* name);
 
-argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args);
-argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* arg,
+argparse_error argparse_parse(argparse_options* opts, argparse_args* args);
+argparse_error argparse_has_option(argparse_options* opts, const char* arg,
                                    int* out);
-argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_option_value(argparse_options* opts,
                                          const char* arg, const char** out);
-argparse_error argparse_get_positional_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_positional_value(argparse_options* opts,
                                              const char* arg, const char** out);
 
-void argparse_print_help(ARGPARSE_OPTIONS* opts);
+void argparse_print_help(argparse_options* opts);
 
-ARGPARSE_ARGS* argparse_new_args(int argc, const char** argv);
-void argparse_free_args(ARGPARSE_ARGS* args);
+argparse_args* argparse_new_args(int argc, const char** argv);
+void argparse_free_args(argparse_args* args);
 
-ARGPARSE_OPTIONS* argparse_new_options(const char* program);
-void argparse_free_options(ARGPARSE_OPTIONS* opts);
+argparse_options* argparse_new_options(const char* program);
+void argparse_free_options(argparse_options* opts);
 
 #ifdef __cplusplus
 }

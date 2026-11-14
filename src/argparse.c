@@ -8,7 +8,7 @@ enum {
     OPTIONS_INITIAL_CAPACITY = 4,
 };
 
-struct argparse_args {
+struct _argparse_args {
     int argc;
     int index;
     const char** argv;
@@ -22,23 +22,23 @@ typedef struct argparse_option {
     char short_option;
     char* option_value;
 
-} ARGPARSE_OPTION;
+} argparse_option;
 
 typedef struct argparse_positional {
     int present;
     char* option_string;
     char* option_value;
 
-} ARGPARSE_POSITIONAL;
+} argparse_positional;
 
-struct argparse_options {
+struct _argparse_options {
     char* program;
 
-    ARGPARSE_OPTION* options;
+    argparse_option* options;
     size_t options_count;
     size_t options_capacity;
 
-    ARGPARSE_POSITIONAL* positional;
+    argparse_positional* positional;
     size_t positional_count;
     size_t positional_capacity;
 };
@@ -64,7 +64,7 @@ static char* argparse_strdup(const char* s) {
     return p;
 }
 
-static const char* argparse_get_next_arg(ARGPARSE_ARGS* args) {
+static const char* argparse_get_next_arg(argparse_args* args) {
     if (!args) {
         return NULL;
     }
@@ -87,7 +87,7 @@ static argparse_error argparse_grow_array(void** data, size_t* capacity,
     return ARGPARSE_OK;
 }
 
-argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_add_option(argparse_options* opts,
                                    const char* option_string, char short_option,
                                    argparse_argtype type) {
     if (!opts || !option_string) {
@@ -97,7 +97,7 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
     if (opts->options_count == opts->options_capacity) {
         argparse_error err =
             argparse_grow_array((void**)&opts->options, &opts->options_capacity,
-                                sizeof(ARGPARSE_OPTION));
+                                sizeof(argparse_option));
         if (err != ARGPARSE_OK) {
             return err;
         }
@@ -106,7 +106,7 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
     if (!copy) {
         return ARGPARSE_ERR_ALLOC;
     }
-    ARGPARSE_OPTION option = {
+    argparse_option option = {
         .option_string = copy,
         .short_option = short_option,
         .option_value = NULL,
@@ -116,12 +116,12 @@ argparse_error argparse_add_option(ARGPARSE_OPTIONS* opts,
     opts->options[opts->options_count++] = option;
     return ARGPARSE_OK;
 }
-argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
-                                       const char* option_string) {
-    if (!opts || !option_string) {
+argparse_error argparse_add_positional(argparse_options* opts,
+                                       const char* name) {
+    if (!opts || !name) {
         return ARGPARSE_ERR_NULL;
     }
-    char* copy = argparse_strdup(option_string);
+    char* copy = argparse_strdup(name);
     if (!copy) {
         return ARGPARSE_ERR_ALLOC;
     }
@@ -129,13 +129,13 @@ argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
     if (opts->positional_count == opts->positional_capacity) {
         argparse_error err = argparse_grow_array((void**)&opts->positional,
                                                  &opts->positional_capacity,
-                                                 sizeof(ARGPARSE_POSITIONAL));
+                                                 sizeof(argparse_positional));
         if (err != ARGPARSE_OK) {
             free(copy);
             return err;
         }
     }
-    ARGPARSE_POSITIONAL option = {
+    argparse_positional option = {
         .option_string = copy,
         .option_value = NULL,
         .present = 0,
@@ -144,7 +144,7 @@ argparse_error argparse_add_positional(ARGPARSE_OPTIONS* opts,
     return ARGPARSE_OK;
 }
 
-static ARGPARSE_POSITIONAL* argparse_get_positional(ARGPARSE_OPTIONS* opts,
+static argparse_positional* argparse_get_positional(argparse_options* opts,
                                                     const char* arg) {
     if (!opts || !arg) {
         return NULL;
@@ -158,7 +158,7 @@ static ARGPARSE_POSITIONAL* argparse_get_positional(ARGPARSE_OPTIONS* opts,
 
     return NULL;
 }
-static ARGPARSE_OPTION* argparse_get_option_short(ARGPARSE_OPTIONS* opts,
+static argparse_option* argparse_get_option_short(argparse_options* opts,
                                                   const char short_option) {
     if (!opts) {
         return NULL;
@@ -170,7 +170,7 @@ static ARGPARSE_OPTION* argparse_get_option_short(ARGPARSE_OPTIONS* opts,
     }
     return NULL;
 }
-static ARGPARSE_OPTION* argparse_get_option(ARGPARSE_OPTIONS* opts,
+static argparse_option* argparse_get_option(argparse_options* opts,
                                             const char* arg) {
     if (!opts || !arg) {
         return NULL;
@@ -186,7 +186,7 @@ static ARGPARSE_OPTION* argparse_get_option(ARGPARSE_OPTIONS* opts,
     return NULL;
 }
 
-static argparse_error argparse_set_option_value(ARGPARSE_OPTION* opt,
+static argparse_error argparse_set_option_value(argparse_option* opt,
                                                 const char* value) {
     char* copy = argparse_strdup(value);
     if (!copy) {
@@ -202,8 +202,8 @@ static argparse_error argparse_set_option_value(ARGPARSE_OPTION* opt,
     return ARGPARSE_OK;
 }
 
-static argparse_error argparse_assign_option(ARGPARSE_OPTIONS* opts,
-                                             ARGPARSE_ARGS* args,
+static argparse_error argparse_assign_option(argparse_options* opts,
+                                             argparse_args* args,
                                              const char* arg) {
     if (!opts || !args || !arg) {
         return ARGPARSE_ERR_NULL;
@@ -218,7 +218,7 @@ static argparse_error argparse_assign_option(ARGPARSE_OPTIONS* opts,
     char* key = copy;
     char* value = argparse_str_split(copy);
 
-    ARGPARSE_OPTION* opt = argparse_get_option(opts, key);
+    argparse_option* opt = argparse_get_option(opts, key);
     if (!opt) {
         if (key[0] == '-') {
             err = ARGPARSE_ERR_UNKNOWN_OPTION;
@@ -246,8 +246,8 @@ static argparse_error argparse_assign_option(ARGPARSE_OPTIONS* opts,
     free(copy);
     return err;
 }
-static argparse_error argparse_assign_positional(ARGPARSE_OPTIONS* opts,
-                                                 ARGPARSE_ARGS* args,
+static argparse_error argparse_assign_positional(argparse_options* opts,
+                                                 argparse_args* args,
                                                  const char* arg) {
     if (!opts || !args || !arg) {
         return ARGPARSE_ERR_NULL;
@@ -271,8 +271,8 @@ static argparse_error argparse_assign_positional(ARGPARSE_OPTIONS* opts,
     }
     return ARGPARSE_OK;
 }
-static argparse_error argparse_handle_arg(ARGPARSE_OPTIONS* opts,
-                                          ARGPARSE_ARGS* args,
+static argparse_error argparse_handle_arg(argparse_options* opts,
+                                          argparse_args* args,
                                           const char* arg) {
     if (!opts || !args || !arg) {
         return ARGPARSE_ERR_NULL;
@@ -294,7 +294,7 @@ static argparse_error argparse_handle_arg(ARGPARSE_OPTIONS* opts,
     const char* value = NULL;
     argparse_error err = ARGPARSE_OK;
     for (size_t i = 1; arg[i]; ++i) {
-        ARGPARSE_OPTION* opt = argparse_get_option_short(opts, arg[i]);
+        argparse_option* opt = argparse_get_option_short(opts, arg[i]);
         if (!opt) {
             return ARGPARSE_ERR_UNKNOWN_OPTION;
         }
@@ -322,7 +322,7 @@ static argparse_error argparse_handle_arg(ARGPARSE_OPTIONS* opts,
     return err;
 }
 
-static void argparse_reset_options(ARGPARSE_OPTIONS* opts) {
+static void argparse_reset_options(argparse_options* opts) {
     for (size_t i = 0; i < opts->options_count; ++i) {
         free(opts->options[i].option_value);
         opts->options[i].option_value = NULL;
@@ -335,7 +335,7 @@ static void argparse_reset_options(ARGPARSE_OPTIONS* opts) {
     }
 }
 
-argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args) {
+argparse_error argparse_parse(argparse_options* opts, argparse_args* args) {
     if (!opts || !args) {
         return ARGPARSE_ERR_NULL;
     }
@@ -360,12 +360,12 @@ argparse_error argparse_parse(ARGPARSE_OPTIONS* opts, ARGPARSE_ARGS* args) {
     return ARGPARSE_OK;
 }
 
-argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* arg,
+argparse_error argparse_has_option(argparse_options* opts, const char* arg,
                                    int* out) {
     if (!opts || !arg || !out) {
         return ARGPARSE_ERR_NULL;
     }
-    ARGPARSE_OPTION* opt = argparse_get_option(opts, arg);
+    argparse_option* opt = argparse_get_option(opts, arg);
     if (!opt) {
         return ARGPARSE_ERR_UNKNOWN_OPTION;
     }
@@ -373,12 +373,12 @@ argparse_error argparse_has_option(ARGPARSE_OPTIONS* opts, const char* arg,
     return ARGPARSE_OK;
 }
 
-argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_option_value(argparse_options* opts,
                                          const char* arg, const char** out) {
     if (!opts || !arg || !out) {
         return ARGPARSE_ERR_NULL;
     }
-    ARGPARSE_OPTION* opt = argparse_get_option(opts, arg);
+    argparse_option* opt = argparse_get_option(opts, arg);
     if (!opt) {
         return ARGPARSE_ERR_UNKNOWN_OPTION;
     }
@@ -392,13 +392,13 @@ argparse_error argparse_get_option_value(ARGPARSE_OPTIONS* opts,
     return ARGPARSE_OK;
 }
 
-argparse_error argparse_get_positional_value(ARGPARSE_OPTIONS* opts,
+argparse_error argparse_get_positional_value(argparse_options* opts,
                                              const char* arg,
                                              const char** out) {
     if (!opts || !arg || !out) {
         return ARGPARSE_ERR_NULL;
     }
-    ARGPARSE_POSITIONAL* opt = argparse_get_positional(opts, arg);
+    argparse_positional* opt = argparse_get_positional(opts, arg);
     if (!opt) {
         return ARGPARSE_ERR_UNKNOWN_POSITIONAL;
     }
@@ -409,7 +409,7 @@ argparse_error argparse_get_positional_value(ARGPARSE_OPTIONS* opts,
     return ARGPARSE_OK;
 }
 
-void argparse_print_help(ARGPARSE_OPTIONS* opts) {
+void argparse_print_help(argparse_options* opts) {
     if (!opts) {
         return;
     }
@@ -439,8 +439,11 @@ void argparse_print_help(ARGPARSE_OPTIONS* opts) {
     printf("\n");
 }
 
-ARGPARSE_ARGS* argparse_new_args(int argc, const char** argv) {
-    ARGPARSE_ARGS* args = malloc(sizeof(ARGPARSE_ARGS));
+argparse_args* argparse_new_args(int argc, const char** argv) {
+    if (argc < 0 || !argv) {
+        return NULL;
+    }
+    argparse_args* args = malloc(sizeof(argparse_args));
     if (!args) {
         return NULL;
     }
@@ -453,13 +456,13 @@ ARGPARSE_ARGS* argparse_new_args(int argc, const char** argv) {
     return args;
 }
 
-void argparse_free_args(ARGPARSE_ARGS* args) { free(args); }
+void argparse_free_args(argparse_args* args) { free(args); }
 
-ARGPARSE_OPTIONS* argparse_new_options(const char* program) {
+argparse_options* argparse_new_options(const char* program) {
     if (!program) {
         return NULL;
     }
-    ARGPARSE_OPTIONS* opts = malloc(sizeof(ARGPARSE_OPTIONS));
+    argparse_options* opts = malloc(sizeof(argparse_options));
     if (!opts) {
         return NULL;
     }
@@ -481,7 +484,7 @@ ARGPARSE_OPTIONS* argparse_new_options(const char* program) {
     return opts;
 }
 
-void argparse_free_options(ARGPARSE_OPTIONS* opts) {
+void argparse_free_options(argparse_options* opts) {
     if (opts) {
         for (size_t i = 0; i < opts->options_count; ++i) {
             free(opts->options[i].option_string);
